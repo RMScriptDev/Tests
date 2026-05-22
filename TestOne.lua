@@ -2601,7 +2601,7 @@ end
 
 -- Button with warning
 MiscTab:CreateButton({
-    Name = "Spider Shoot (Teleport + Rotate + Shoot + Return)",
+    Name = "Spider Shoot",
     Callback = function()
         miscNotify("⚠️ Warning", "Use only if there's a spider on the window!", 3)
         task.wait(0.5)
