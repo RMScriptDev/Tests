@@ -2439,7 +2439,7 @@ MiscTab:CreateButton({
 
 -- ========== SPIDER SHOOT (with cabin objects removal/restore) ==========
 MiscTab:CreateButton({
-    Name = "────────── Spider Tools ──────────",
+    Name = "Night 3 misc",
     Callback = function() end
 })
 
