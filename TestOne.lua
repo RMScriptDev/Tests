@@ -369,7 +369,7 @@ PlayerTab:CreateButton({
     end
 })
 
--- ========== VISUALS TAB ==========
+
 -- ========== VISUALS TAB ==========
 -- Оптимизированный ESP без лагов
 
@@ -1109,7 +1109,7 @@ VisualsTab:CreateButton({
     end
 })
 
--- ========== TELEPORTS 1 TAB ==========
+
 -- ========== TELEPORTS 1 TAB ==========
 local function teleportToGenerator()
     local player = game.Players.LocalPlayer
@@ -2290,10 +2290,11 @@ FixTowerTab:CreateButton({
     end
 })
 
+
 -- ========== MISC TAB ==========
 local MiscTab = Window:CreateTab("misc", 4483362458)
 
--- Helper function for notifications (in case not defined globally)
+-- Helper function for notifications
 local function miscNotify(title, content, duration)
     Rayfield:Notify({ Title = title, Content = content, Duration = duration or 2.5 })
 end
@@ -2436,28 +2437,45 @@ MiscTab:CreateButton({
     end
 })
 
--- ========== SPIDER SHOOT (Teleport + Shoot + Return) ==========
+-- ========== SPIDER SHOOT (with cabin objects removal/restore) ==========
 MiscTab:CreateButton({
-    Name = "────────── Spider Shoot ──────────",
+    Name = "────────── Spider Tools ──────────",
     Callback = function() end
 })
 
--- Helper: find spider
--- Хранилище для временно удалённых объектов (глобальное для MiscTab)
+-- Storage for temporarily removed cabin objects
 local hiddenCabins = {}
 
--- Функция: скрыть нужные объекты из Cabins
+-- Helper: find spider
+local function findSpider()
+    local spider = workspace:FindFirstChild("WorkerHead")
+    if not spider then spider = workspace:FindFirstChild("Spider") end
+    if not spider then spider = workspace:FindFirstChild("Arachnid") end
+    return spider
+end
+
+local function getSpiderHead(spider)
+    if spider then
+        local head = spider:FindFirstChild("Head")
+        if not head then head = spider:FindFirstChild("HumanoidRootPart") end
+        if not head then head = spider:FindFirstChildWhichIsA("BasePart") end
+        return head
+    end
+    return nil
+end
+
+-- Hide specific cabin objects
 local function hideCabins()
     local cabins = workspace:FindFirstChild("Cabins")
-    if not cabins then 
-        miscNotify("Spider Shoot", "Cabins folder not found, skipping", 2)
-        return false 
+    if not cabins then
+        miscNotify("Spider Shoot", "Cabins folder not found, skipping object removal", 2)
+        return false
     end
     
-    -- Список объектов для удаления по индексам/имени
+    -- Targets: index 4, Cabin by name, index 2, index 3
     local targets = {
         cabins:GetChildren()[4],
-        cabins:FindFirstChild("Cabin"),  -- workspace.Cabins.Cabin
+        cabins:FindFirstChild("Cabin"),
         cabins:GetChildren()[2],
         cabins:GetChildren()[3]
     }
@@ -2465,9 +2483,8 @@ local function hideCabins()
     hiddenCabins = {}
     for _, obj in ipairs(targets) do
         if obj and obj.Parent then
-            -- Сохраняем объект и его родителя
             table.insert(hiddenCabins, {obj = obj, parent = obj.Parent})
-            obj.Parent = nil  -- временно удаляем из игры
+            obj.Parent = nil
         end
     end
     
@@ -2478,7 +2495,7 @@ local function hideCabins()
     return false
 end
 
--- Функция: восстановить скрытые объекты
+-- Restore previously hidden cabin objects
 local function restoreCabins()
     for _, item in ipairs(hiddenCabins) do
         if item.obj then
@@ -2489,7 +2506,7 @@ local function restoreCabins()
     miscNotify("Spider Shoot", "Cabin objects restored", 2)
 end
 
--- Основная функция (замените существующую)
+-- Main action: teleport, rotate, shoot, wait, return, restore cabins
 local function spiderShootAction()
     local player = game.Players.LocalPlayer
     local character = player.Character
@@ -2510,22 +2527,21 @@ local function spiderShootAction()
         return
     end
 
-    -- ---- УДАЛЕНИЕ ОБЪЕКТОВ CABINS ----
+    -- Hide cabins before teleport
     hideCabins()
-    task.wait(0.2) -- небольшая пауза, чтобы удаление точно произошло
+    task.wait(0.2)
 
-    -- Save original position and rotation of character AND camera
+    -- Save original position, rotation, camera
     local hrp = character.HumanoidRootPart
     local originalCF = hrp.CFrame
     local camera = workspace.CurrentCamera
     local originalCameraCF = camera.CFrame
 
-    -- Calculate new position: stand in front of spider
-    local spiderForward = spiderHead.CFrame.LookVector
-    local teleportPos = spiderHead.Position + spiderForward * -2.5
-    local newPlayerCF = CFrame.new(teleportPos, spiderHead.Position)
-    hrp.CFrame = newPlayerCF
+    -- Teleport and rotate player to face spider
+    local teleportPos = spiderHead.Position + spiderHead.CFrame.LookVector * -2.5
+    hrp.CFrame = CFrame.new(teleportPos, spiderHead.Position)
 
+    -- Snap camera to spider
     camera.CameraType = Enum.CameraType.Scriptable
     camera.CFrame = CFrame.new(hrp.Position + Vector3.new(0, 1.5, 0), spiderHead.Position)
 
@@ -2538,15 +2554,14 @@ local function spiderShootAction()
 
     if not remote then
         miscNotify("Spider Shoot", "Remote 'Shoot' not found", 2)
-        -- Restore
         hrp.CFrame = originalCF
         camera.CFrame = originalCameraCF
         camera.CameraType = Enum.CameraType.Custom
-        restoreCabins()  -- вернуть объекты даже при ошибке
+        restoreCabins()
         return
     end
 
-    -- Find tool
+    -- Find tool (Shotgun preferred)
     local tool = character:FindFirstChildWhichIsA("Tool")
     if not tool then
         tool = player.Backpack:FindFirstChild("Shotgun")
@@ -2570,7 +2585,7 @@ local function spiderShootAction()
         miscNotify("Spider Shoot", "Failed to shoot", 2)
     end
 
-    -- Wait 2 seconds (можно изменить)
+    -- Wait 2 seconds (adjustable)
     task.wait(2)
 
     -- Return to original position and camera
@@ -2578,7 +2593,7 @@ local function spiderShootAction()
     camera.CFrame = originalCameraCF
     camera.CameraType = Enum.CameraType.Custom
 
-    -- ---- ВОССТАНОВЛЕНИЕ ОБЪЕКТОВ CABINS ----
+    -- Restore cabin objects
     restoreCabins()
 
     miscNotify("Spider Shoot", "Returned to original position", 2)
@@ -2586,7 +2601,7 @@ end
 
 -- Button with warning
 MiscTab:CreateButton({
-    Name = "Spider Shoot)",
+    Name = "Spider Shoot (Teleport + Rotate + Shoot + Return)",
     Callback = function()
         miscNotify("⚠️ Warning", "Use only if there's a spider on the window!", 3)
         task.wait(0.5)
