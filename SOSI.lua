@@ -7,13 +7,13 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Создаём окно
 local Window = Rayfield:CreateWindow({
-    Name = "OtherWaifus Tool",
+    Name = "KAKASHKI",
     Icon = 0,
     LoadingTitle = "Loading",
-    LoadingSubtitle = "by DeepSeek",
+    LoadingSubtitle = "by SVO",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "OtherWaifusTool",
+        FolderName = "da",
         FileName = "Settings"
     },
     KeySystem = false
